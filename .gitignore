@@ -25,4 +25,4 @@ build/
 htmlcov/
 
 # Generated (tracked separately)
-# generated/
+# output/
