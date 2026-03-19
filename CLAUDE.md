@@ -13,7 +13,7 @@ These decisions have been made and MUST be followed:
 3. **PK**: UUID (all DBs unified, for Spanner compatibility)
 4. **Class Design**: Template Method pattern (案C) — see `docs/ARCHITECTURE.md`
 5. **async/sync**: async interface unified. Cloud SQL/SQLite use native async, Spanner/BigQuery wrap sync via `asyncio.to_thread()`
-6. **openapi-generator**: api.yaml is Single Source of Truth. Generated code goes to `generated/`, hand-written code in `src/loadtest_api/`. Regenerate on api.yaml changes.
+6. **openapi-generator**: api.yaml is Single Source of Truth. Generated code goes to `output/`, hand-written code in `src/loadtest_api/`. Regenerate on api.yaml changes.
 7. **Testing**: TDD (t-wada style Red-Green-Refactor). Unit tests only for now (SQLite in-memory). Integration tests added later.
 8. **DI**:
    - Logging: structured JSON on Cloud Run, human-readable locally
@@ -29,7 +29,7 @@ loadtest-api-bench/
 ├── api.yaml                    # OpenAPI spec (Single Source of Truth)
 ├── pyproject.toml              # Rye project config
 ├── Dockerfile
-├── generated/                  # openapi-generator output (do not hand-edit)
+├── output/                     # openapi-generator output (do not hand-edit)
 ├── src/
 │   └── loadtest_api/
 │       ├── __init__.py

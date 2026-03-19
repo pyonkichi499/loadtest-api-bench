@@ -13,7 +13,7 @@ FastAPI で構築した負荷テスト用 API バックエンド。Locust を使
 3. **PK**: UUID (Spanner 互換のため全 DB で統一)
 4. **クラス設計**: Template Method パターン (案C) — 詳細は `docs/ARCHITECTURE.md`
 5. **async/sync**: async インターフェースで統一。Cloud SQL/SQLite は native async、Spanner/BigQuery は `asyncio.to_thread()` でラップ
-6. **openapi-generator**: api.yaml を Single Source of Truth とする。生成コードは `generated/` に出力、手書きコードは `src/loadtest_api/` に配置。api.yaml 変更時に再生成
+6. **openapi-generator**: api.yaml を Single Source of Truth とする。生成コードは `output/` に出力、手書きコードは `src/loadtest_api/` に配置。api.yaml 変更時に再生成
 7. **テスト**: TDD (t-wada 式 Red-Green-Refactor)。現時点は単体テストのみ (SQLite in-memory)。結合テストは後日追加
 8. **DI**:
    - ログ: Cloud Run では構造化 JSON、ローカルでは人間向けフォーマット
@@ -29,7 +29,7 @@ loadtest-api-bench/
 ├── api.yaml                    # OpenAPI 仕様 (Single Source of Truth)
 ├── pyproject.toml              # Rye プロジェクト設定
 ├── Dockerfile
-├── generated/                  # openapi-generator 出力 (手動編集禁止)
+├── output/                     # openapi-generator 出力 (手動編集禁止)
 ├── src/
 │   └── loadtest_api/
 │       ├── __init__.py

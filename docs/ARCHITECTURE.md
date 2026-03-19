@@ -212,8 +212,8 @@ def get_db_accessor(settings: Settings = Depends(get_settings)) -> DBAccessor:
 **api.yaml を Single Source of Truth** とする運用を採用。
 
 - `api.yaml` を変更するたびに openapi-generator で再生成する
-- 生成コードは `generated/` ディレクトリに出力 (再生成で上書きされる)
-- 手書きコードは `src/loadtest_api/` に配置 (`generated/` を import して使う)
+- 生成コードは `output/` ディレクトリに出力 (再生成で上書きされる)
+- 手書きコードは `src/loadtest_api/` に配置 (`output/` を import して使う)
 - 生成コードとカスタムコードを厳密に分離する
 
 ## テスト戦略
