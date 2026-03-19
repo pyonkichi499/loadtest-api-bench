@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  description: Load testing API backend for comparing Cloud SQL / Spanner / BigQuery
+    response characteristics
+  title: Load Test API
+  version: 0.1.0
+servers:
+- url: /
+paths:
+  /health:
+    get:
+      operationId: healthCheck
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+          description: OK
+      summary: Health check endpoint
+      tags:
+      - health
+  /users/{user_id}:
+    get:
+      operationId: getUserById
+      parameters:
+      - explode: false
+        in: path
+        name: user_id
+        required: true
+        schema:
+          format: uuid
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+          description: User found
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: User not found
+      summary: Get a user by ID (PK lookup)
+      tags:
+      - users
+  /users:
+    get:
+      operationId: listUsers
+      parameters:
+      - explode: true
+        in: query
+        name: limit
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/User"
+                type: array
+          description: List of users
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: Validation error
+      summary: List users with limit
+      tags:
+      - users
+  /users/search:
+    get:
+      operationId: searchUsers
+      parameters:
+      - explode: true
+        in: query
+        name: name
+        required: true
+        schema:
+          minLength: 1
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/User"
+                type: array
+          description: Search results
+      summary: "Search users by name (partial match, no index)"
+      tags:
+      - users
+  /users/stats:
+    get:
+      operationId: getUserStats
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStats"
+          description: User statistics
+      summary: "Get user statistics (COUNT, AVG)"
+      tags:
+      - users
+components:
+  schemas:
+    User:
+      example:
+        name: name
+        id: 046b6c7f-0b8a-43b9-b35d-6489e6daee91
+        age: 0
+        email: email
+      properties:
+        id:
+          format: uuid
+          title: id
+          type: string
+        name:
+          title: name
+          type: string
+        age:
+          title: age
+          type: integer
+        email:
+          format: email
+          title: email
+          type: string
+      required:
+      - age
+      - email
+      - id
+      - name
+      title: User
+      type: object
+    UserStats:
+      example:
+        avg_age: 6.0274563
+        count: 0
+      properties:
+        count:
+          title: count
+          type: integer
+        avg_age:
+          format: float
+          nullable: true
+          title: avg_age
+          type: number
+      required:
+      - avg_age
+      - count
+      title: UserStats
+      type: object
+    HealthResponse:
+      example:
+        status: ok
+      properties:
+        status:
+          example: ok
+          title: status
+          type: string
+      required:
+      - status
+      title: HealthResponse
+      type: object
+    ErrorResponse:
+      example:
+        detail: detail
+      properties:
+        detail:
+          title: detail
+          type: string
+      required:
+      - detail
+      title: ErrorResponse
+      type: object
