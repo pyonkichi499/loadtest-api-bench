@@ -24,5 +24,11 @@ build/
 .coverage
 htmlcov/
 
+# Claude Code
+.claude/
+
+# Node.js (openapi-generator-cli)
+node_modules/
+
 # Generated (tracked separately)
 # output/

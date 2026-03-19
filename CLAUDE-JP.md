@@ -53,7 +53,7 @@ loadtest-api-bench/
 │   ├── conftest.py             # SQLite in-memory fixture
 │   ├── test_repositories.py    # Repository 単体テスト
 │   └── test_api_users.py       # API エンドポイントテスト
-└── locustfile.py               # Locust シナリオ
+└── (Locust シナリオは別リポジトリで管理予定)
 ```
 
 ## 開発コマンド
@@ -70,7 +70,7 @@ rye run pytest tests/ -v        # テスト実行
 4. TDD: SQLite Repository → API エンドポイント
 5. Cloud SQL / Spanner / BigQuery Repository 追加
 6. Dockerfile + Cloud Run 設定
-7. Locustfile 作成
+7. Locustfile → **別リポジトリで管理予定**
 
 ## テストメソッド命名規約
 

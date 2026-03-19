@@ -53,7 +53,7 @@ loadtest-api-bench/
 │   ├── conftest.py             # SQLite in-memory fixture
 │   ├── test_repositories.py    # Repository unit tests
 │   └── test_api_users.py       # API endpoint tests
-└── locustfile.py               # Locust scenarios
+└── (Locust scenarios are in a separate repository)
 ```
 
 ## Development Commands
@@ -70,7 +70,7 @@ rye run pytest tests/ -v        # Run tests
 4. TDD: SQLite Repository → API endpoints
 5. Cloud SQL / Spanner / BigQuery Repositories
 6. Dockerfile + Cloud Run config
-7. Locustfile
+7. Locustfile → **別リポジトリで管理予定**
 
 ## Test Naming Convention
 
