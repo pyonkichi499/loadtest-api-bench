@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 
 from loadtest_api.api.users import router
+from loadtest_api.config import get_settings
+from loadtest_api.logging import setup_logging
+
+settings = get_settings()
+setup_logging(settings.log_format)
 
 app = FastAPI(
     title="Load Test API",
