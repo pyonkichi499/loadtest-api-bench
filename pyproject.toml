@@ -1,0 +1,43 @@
+[project]
+name = "loadtest-api-bench"
+version = "0.1.0"
+description = "Load testing API backend with FastAPI for comparing Cloud SQL / Spanner / BigQuery on Cloud Run"
+authors = [
+    { name = "pyonkichi499", email = "hrs499944@gmail.com" }
+]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "sqlalchemy[asyncio]>=2.0",
+    "aiosqlite>=0.21",
+    "pydantic-settings>=2.7",
+]
+[project.optional-dependencies]
+cloudsql = ["asyncpg>=0.30"]
+spanner = ["sqlalchemy-spanner>=1.7"]
+bigquery = ["sqlalchemy-bigquery>=1.11"]
+all = ["asyncpg>=0.30", "sqlalchemy-spanner>=1.7", "sqlalchemy-bigquery>=1.11"]
+
+readme = "README.md"
+requires-python = ">= 3.12"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.25",
+    "httpx>=0.28",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/loadtest_api"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
