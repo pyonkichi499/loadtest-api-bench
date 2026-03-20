@@ -22,14 +22,14 @@ async def search_users(
     return await db.search_users(name=name)
 
 
-@router.get("/users/stats")
+@router.get("/users/stats", response_model=StatsSchema)
 async def get_user_stats(
     db: DBAccessor = Depends(get_db_accessor),
 ) -> StatsSchema:
     return await db.get_stats()
 
 
-@router.get("/users/{user_id}")
+@router.get("/users/{user_id}", response_model=UserSchema)
 async def get_user_by_id(
     user_id: str,
     db: DBAccessor = Depends(get_db_accessor),

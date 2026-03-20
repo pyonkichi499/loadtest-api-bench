@@ -16,6 +16,9 @@ def _create_accessor(
     spanner_database: str = "",
     bigquery_project: str = "",
     bigquery_dataset: str = "",
+    pool_size: int = 5,
+    max_overflow: int = 10,
+    pool_timeout: int = 30,
 ) -> DBAccessor:
     match db_type:
         case "sqlite":
@@ -23,7 +26,12 @@ def _create_accessor(
             return SQLiteAccessor(path=sqlite_path)
         case "cloud_sql":
             from loadtest_api.repositories.cloud_sql import CloudSQLAccessor
-            return CloudSQLAccessor(dsn=cloud_sql_dsn)
+            return CloudSQLAccessor(
+                dsn=cloud_sql_dsn,
+                pool_size=pool_size,
+                max_overflow=max_overflow,
+                pool_timeout=pool_timeout,
+            )
         case "spanner":
             from loadtest_api.repositories.spanner import SpannerAccessor
             return SpannerAccessor(
@@ -38,7 +46,7 @@ def _create_accessor(
                 dataset=bigquery_dataset,
             )
         case _:
-            raise ValueError(f"Unsupported db_type: {db_type}")
+            raise ValueError(f"Unsupported db_type: {db_type}. Valid: sqlite, cloud_sql, spanner, bigquery")
 
 
 def get_db_accessor(settings: Settings = Depends(get_settings)) -> DBAccessor:
@@ -51,4 +59,7 @@ def get_db_accessor(settings: Settings = Depends(get_settings)) -> DBAccessor:
         spanner_database=settings.spanner_database,
         bigquery_project=settings.bigquery_project,
         bigquery_dataset=settings.bigquery_dataset,
+        pool_size=settings.pool_size,
+        max_overflow=settings.max_overflow,
+        pool_timeout=settings.pool_timeout,
     )

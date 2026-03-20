@@ -50,3 +50,73 @@ Locust を使った負荷テスト用 FastAPI バックエンド。Cloud Run 上
 - **PK**: UUID (Spanner が auto-increment 非対応のため全 DB で統一)
 - **シードデータ**: 約 10 万件 (index scan と full scan の差が出るバランス)
 - **テーブル**: users (id, name, age, email)
+
+## クイックスタート
+
+### 前提条件
+
+- Python 3.12+
+- [Rye](https://rye.astral.sh/)
+
+### セットアップ
+
+```bash
+git clone https://github.com/<your-org>/loadtest-api-bench.git
+cd loadtest-api-bench
+rye sync
+```
+
+### テスト実行
+
+```bash
+rye run pytest tests/ -v
+```
+
+### ローカル起動
+
+```bash
+rye run uvicorn loadtest_api.main:app --reload
+```
+
+ブラウザで http://localhost:8000/docs にアクセスすると Swagger UI が表示されます。
+
+## 環境変数
+
+すべての環境変数には `APP_` プレフィックスを付けて設定します（例: `APP_DB_TYPE=sqlite`）。
+
+| 変数名 | デフォルト値 | 説明 |
+|---|---|---|
+| `APP_DB_TYPE` | `sqlite` | 使用する DB (`sqlite` / `cloud_sql` / `spanner` / `bigquery`) |
+| `APP_SQLITE_PATH` | `:memory:` | SQLite のファイルパス (`:memory:` でインメモリ) |
+| `APP_CLOUD_SQL_DSN` | `""` | Cloud SQL (PostgreSQL) の接続文字列 |
+| `APP_SPANNER_PROJECT` | `""` | Spanner の GCP プロジェクト ID |
+| `APP_SPANNER_INSTANCE` | `""` | Spanner のインスタンス ID |
+| `APP_SPANNER_DATABASE` | `""` | Spanner のデータベース名 |
+| `APP_BIGQUERY_PROJECT` | `""` | BigQuery の GCP プロジェクト ID |
+| `APP_BIGQUERY_DATASET` | `""` | BigQuery のデータセット名 |
+| `APP_POOL_SIZE` | `5` | コネクションプールの常時接続数 (Cloud SQL 用) |
+| `APP_MAX_OVERFLOW` | `10` | プール上限を超えて追加作成できる接続数 (Cloud SQL 用) |
+| `APP_POOL_TIMEOUT` | `30` | プールから接続取得時のタイムアウト秒数 (Cloud SQL 用) |
+| `APP_LOG_FORMAT` | `text` | ログ形式 (`text`: 人間向け / `json`: Cloud Run 向け構造化ログ) |
+
+## プロジェクト構成
+
+```
+src/loadtest_api/
+├── main.py                 # FastAPI アプリケーション
+├── config.py               # pydantic-settings による設定管理
+├── dependencies.py         # DI プロバイダ
+├── logging.py              # ログフォーマット切替
+├── api/
+│   └── users.py            # ルートハンドラ
+├── models/
+│   └── user.py             # SQLAlchemy ORM + Pydantic スキーマ
+└── repositories/
+    ├── base.py             # DBAccessor (ABC)
+    ├── async_accessor.py   # AsyncDBAccessor
+    ├── sync_accessor.py    # SyncDBAccessor
+    ├── sqlite.py           # SQLiteAccessor
+    ├── cloud_sql.py        # CloudSQLAccessor
+    ├── spanner.py          # SpannerAccessor
+    └── bigquery.py         # BigQueryAccessor
+```
