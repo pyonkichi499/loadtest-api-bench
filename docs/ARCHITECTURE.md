@@ -39,6 +39,11 @@ DBAccessor (基底: SQL 組み立て + ビジネスロジック)
 
 ```python
 class DBAccessor(ABC):
+    @staticmethod
+    def _escape_like(value: str) -> str:
+        """LIKE ワイルドカード文字（%, _）をバックスラッシュでエスケープする。"""
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
     async def get_user_by_id(self, user_id: str) -> UserSchema | None:
         stmt = select(User).where(User.id == user_id)
         row = await self._scalar_one_or_none(stmt)
@@ -50,29 +55,30 @@ class DBAccessor(ABC):
         return [UserSchema.model_validate(r) for r in rows]
 
     async def search_users(self, name: str) -> list[UserSchema]:
-        stmt = select(User).where(User.name.ilike(f"%{name}%"))
+        escaped = self._escape_like(name)
+        stmt = select(User).where(User.name.ilike(f"%{escaped}%", escape="\\"))
         rows = await self._scalars_all(stmt)
         return [UserSchema.model_validate(r) for r in rows]
 
     async def get_stats(self) -> StatsSchema:
         stmt = select(func.count(), func.avg(User.age)).select_from(User)
         row = await self._one(stmt)
-        return StatsSchema(count=row[0], avg_age=row[1])
+        return StatsSchema(count=row[0], avg_age=float(row[1]) if row[1] is not None else None)
 
     @abstractmethod
-    async def _scalar_one_or_none(self, stmt) -> Any: ...
+    async def _scalar_one_or_none(self, stmt: Any) -> Any: ...
     @abstractmethod
-    async def _scalars_all(self, stmt) -> list[Any]: ...
+    async def _scalars_all(self, stmt: Any) -> list[Any]: ...
     @abstractmethod
-    async def _one(self, stmt) -> Any: ...
+    async def _one(self, stmt: Any) -> Any: ...
 ```
 
 #### AsyncDBAccessor (中間クラス: Cloud SQL / SQLite 用)
 
 ```python
 class AsyncDBAccessor(DBAccessor):
-    def __init__(self, async_engine: AsyncEngine):
-        self.async_session = async_sessionmaker(async_engine)
+    def __init__(self, async_engine: AsyncEngine) -> None:
+        self.async_session = async_sessionmaker(async_engine, expire_on_commit=False)
 
     async def _scalar_one_or_none(self, stmt):
         async with self.async_session() as s:
@@ -93,14 +99,14 @@ Spanner / BigQuery の Python クライアントは async 非対応のため、`
 
 ```python
 class SyncDBAccessor(DBAccessor):
-    def __init__(self, engine: Engine):
-        self.SessionFactory = sessionmaker(engine)
+    def __init__(self, engine: Engine) -> None:
+        self._session_factory = sessionmaker(engine, expire_on_commit=False)
 
     async def _scalar_one_or_none(self, stmt):
         return await asyncio.to_thread(self._sync_scalar_one_or_none, stmt)
 
     def _sync_scalar_one_or_none(self, stmt):
-        with self.SessionFactory() as s:
+        with self._session_factory() as s:
             return s.execute(stmt).scalar_one_or_none()
 
     # _scalars_all, _one も同様のパターン
@@ -145,7 +151,11 @@ Spanner の `ILIKE` 問題の対処例:
 ```python
 class SpannerAccessor(SyncDBAccessor):
     async def search_users(self, name: str) -> list[UserSchema]:
-        stmt = select(User).where(func.lower(User.name).like(f"%{name.lower()}%"))
+        """Spanner は ILIKE 未対応のため、LOWER + LIKE で代替する。"""
+        escaped = self._escape_like(name.lower())
+        stmt = select(User).where(
+            func.lower(User.name).like(f"%{escaped}%", escape="\\")
+        )
         rows = await self._scalars_all(stmt)
         return [UserSchema.model_validate(r) for r in rows]
 ```
@@ -207,14 +217,15 @@ def get_db_accessor(settings: Settings = Depends(get_settings)) -> DBAccessor:
             return BigQueryAccessor(...)
 ```
 
-## openapi-generator 運用方針
+## api.yaml 運用方針
 
-**api.yaml を Single Source of Truth** とする運用を採用。
+**api.yaml は仕様参照ドキュメント** として維持する。
 
-- `api.yaml` を変更するたびに openapi-generator で再生成する
-- 生成コードは `output/` ディレクトリに出力 (再生成で上書きされる)
-- 手書きコードは `src/loadtest_api/` に配置 (`output/` を import して使う)
-- 生成コードとカスタムコードを厳密に分離する
+- openapi-generator によるサーバーコード生成は使用しない
+- サーバー実装は全て `src/loadtest_api/` に手書きで行う
+- `output/` ディレクトリは `.gitignore` で除外 (openapi-generator 出力の参照用)
+- api.yaml との整合性は **schemathesis 契約テスト** で検証する
+- schemathesis が api.yaml の全エンドポイントに対して自動的にリクエストを生成し、レスポンスが仕様に準拠しているかを検証する
 
 ## テスト戦略
 

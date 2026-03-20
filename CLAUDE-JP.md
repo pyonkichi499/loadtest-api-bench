@@ -13,7 +13,7 @@ FastAPI で構築した負荷テスト用 API バックエンド。Locust を使
 3. **PK**: UUID (Spanner 互換のため全 DB で統一)
 4. **クラス設計**: Template Method パターン (案C) — 詳細は `docs/ARCHITECTURE.md`
 5. **async/sync**: async インターフェースで統一。Cloud SQL/SQLite は native async、Spanner/BigQuery は `asyncio.to_thread()` でラップ
-6. **openapi-generator**: api.yaml を Single Source of Truth とする。生成コードは `output/` に出力、手書きコードは `src/loadtest_api/` に配置。api.yaml 変更時に再生成
+6. **API 仕様**: api.yaml は仕様参照ドキュメントとして維持。サーバーコード生成 (openapi-generator) は使用せず、手書き実装を `src/loadtest_api/` に配置。api.yaml との整合性は schemathesis 契約テストで検証
 7. **テスト**: TDD (t-wada 式 Red-Green-Refactor)。現時点は単体テストのみ (SQLite in-memory)。結合テストは後日追加
 8. **DI**:
    - ログ: Cloud Run では構造化 JSON、ローカルでは人間向けフォーマット
@@ -29,7 +29,15 @@ loadtest-api-bench/
 ├── api.yaml                    # OpenAPI 仕様 (Single Source of Truth)
 ├── pyproject.toml              # Rye プロジェクト設定
 ├── Dockerfile
-├── output/                     # openapi-generator 出力 (手動編集禁止)
+├── deploy.sh                   # Cloud Run デプロイスクリプト
+├── .env.example                # 環境変数テンプレート
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # CI パイプライン
+├── output/                     # .gitignore で除外 (openapi-generator 出力、参照用)
+├── scripts/
+│   └── seed.py                 # シードデータ生成スクリプト
+├── devlog/                     # 開発日誌
 ├── src/
 │   └── loadtest_api/
 │       ├── __init__.py
@@ -37,6 +45,7 @@ loadtest-api-bench/
 │       ├── config.py           # pydantic-settings
 │       ├── dependencies.py     # DI プロバイダー
 │       ├── logging.py          # ログ形式ファクトリ
+│       ├── middleware.py        # リクエスト/レスポンス ミドルウェア
 │       ├── models/
 │       │   └── user.py         # SQLAlchemy ORM + Pydantic スキーマ
 │       ├── api/
@@ -52,7 +61,10 @@ loadtest-api-bench/
 ├── tests/
 │   ├── conftest.py             # SQLite in-memory fixture
 │   ├── test_repositories.py    # Repository 単体テスト
-│   └── test_api_users.py       # API エンドポイントテスト
+│   ├── test_api_users.py       # API エンドポイントテスト
+│   ├── test_middleware.py      # ミドルウェア単体テスト
+│   ├── test_logging.py         # ログ単体テスト
+│   └── test_seed.py            # シードスクリプト単体テスト
 └── (Locust シナリオは別リポジトリで管理予定)
 ```
 
@@ -60,12 +72,14 @@ loadtest-api-bench/
 
 ```bash
 rye run pytest tests/ -v        # テスト実行
+rye run python scripts/seed.py --db-type sqlite --sqlite-path seed.db --count 100000  # シードデータ生成
+uvicorn loadtest_api.main:app --reload  # ローカル開発サーバー起動
 ```
 
 ## 実装順序
 
 1. Rye プロジェクト初期化 + api.yaml 作成
-2. openapi-generator でコード生成
+2. 手書き FastAPI 実装 (api.yaml を仕様参照、schemathesis で契約テスト)
 3. DI 基盤構築 (config, logging, repository protocol)
 4. TDD: SQLite Repository → API エンドポイント
 5. Cloud SQL / Spanner / BigQuery Repository 追加

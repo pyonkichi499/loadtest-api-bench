@@ -13,7 +13,7 @@ These decisions have been made and MUST be followed:
 3. **PK**: UUID (all DBs unified, for Spanner compatibility)
 4. **Class Design**: Template Method pattern (案C) — see `docs/ARCHITECTURE.md`
 5. **async/sync**: async interface unified. Cloud SQL/SQLite use native async, Spanner/BigQuery wrap sync via `asyncio.to_thread()`
-6. **openapi-generator**: api.yaml is Single Source of Truth. Generated code goes to `output/`, hand-written code in `src/loadtest_api/`. Regenerate on api.yaml changes.
+6. **API spec**: api.yaml is maintained as a specification reference. Server code generation (openapi-generator) is not used; all implementation is hand-written in `src/loadtest_api/`. Conformance to api.yaml is verified via schemathesis contract tests.
 7. **Testing**: TDD (t-wada style Red-Green-Refactor). Unit tests only for now (SQLite in-memory). Integration tests added later.
 8. **DI**:
    - Logging: structured JSON on Cloud Run, human-readable locally
@@ -29,7 +29,15 @@ loadtest-api-bench/
 ├── api.yaml                    # OpenAPI spec (Single Source of Truth)
 ├── pyproject.toml              # Rye project config
 ├── Dockerfile
-├── output/                     # openapi-generator output (do not hand-edit)
+├── deploy.sh                   # Cloud Run deployment script
+├── .env.example                # Environment variable template
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # CI pipeline
+├── output/                     # .gitignore excluded (openapi-generator output, for reference only)
+├── scripts/
+│   └── seed.py                 # Seed data generator
+├── devlog/                     # Development diary
 ├── src/
 │   └── loadtest_api/
 │       ├── __init__.py
@@ -37,6 +45,7 @@ loadtest-api-bench/
 │       ├── config.py           # pydantic-settings
 │       ├── dependencies.py     # DI providers
 │       ├── logging.py          # Log format factory
+│       ├── middleware.py        # Request/Response middleware
 │       ├── models/
 │       │   └── user.py         # SQLAlchemy ORM + Pydantic schemas
 │       ├── api/
@@ -52,7 +61,10 @@ loadtest-api-bench/
 ├── tests/
 │   ├── conftest.py             # SQLite in-memory fixture
 │   ├── test_repositories.py    # Repository unit tests
-│   └── test_api_users.py       # API endpoint tests
+│   ├── test_api_users.py       # API endpoint tests
+│   ├── test_middleware.py      # Middleware unit tests
+│   ├── test_logging.py         # Logging unit tests
+│   └── test_seed.py            # Seed script unit tests
 └── (Locust scenarios are in a separate repository)
 ```
 
@@ -60,12 +72,14 @@ loadtest-api-bench/
 
 ```bash
 rye run pytest tests/ -v        # Run tests
+rye run python scripts/seed.py --db-type sqlite --sqlite-path seed.db --count 100000  # Seed data
+uvicorn loadtest_api.main:app --reload  # Local dev server
 ```
 
 ## Implementation Order
 
 1. Rye project init + api.yaml creation
-2. openapi-generator code generation
+2. Hand-written FastAPI implementation (api.yaml as spec reference, schemathesis for contract testing)
 3. DI foundation (config, logging, repository protocol)
 4. TDD: SQLite Repository → API endpoints
 5. Cloud SQL / Spanner / BigQuery Repositories
