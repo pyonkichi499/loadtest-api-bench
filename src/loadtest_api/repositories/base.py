@@ -7,6 +7,11 @@ from loadtest_api.models.user import StatsSchema, User, UserSchema
 
 
 class DBAccessor(ABC):
+    @staticmethod
+    def _escape_like(value: str) -> str:
+        """LIKE ワイルドカード文字（%, _）をバックスラッシュでエスケープする。"""
+        return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
     async def get_user_by_id(self, user_id: str) -> UserSchema | None:
         stmt = select(User).where(User.id == user_id)
         row = await self._scalar_one_or_none(stmt)
@@ -18,7 +23,8 @@ class DBAccessor(ABC):
         return [UserSchema.model_validate(r) for r in rows]
 
     async def search_users(self, name: str) -> list[UserSchema]:
-        stmt = select(User).where(User.name.ilike(f"%{name}%"))
+        escaped = self._escape_like(name)
+        stmt = select(User).where(User.name.ilike(f"%{escaped}%", escape="\\"))
         rows = await self._scalars_all(stmt)
         return [UserSchema.model_validate(r) for r in rows]
 

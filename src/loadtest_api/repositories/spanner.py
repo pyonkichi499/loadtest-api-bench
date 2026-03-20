@@ -12,6 +12,9 @@ class SpannerAccessor(SyncDBAccessor):
 
     async def search_users(self, name: str) -> list[UserSchema]:
         """Spanner は ILIKE 未対応のため、LOWER + LIKE で代替する。"""
-        stmt = select(User).where(func.lower(User.name).like(f"%{name.lower()}%"))
+        escaped = self._escape_like(name.lower())
+        stmt = select(User).where(
+            func.lower(User.name).like(f"%{escaped}%", escape="\\")
+        )
         rows = await self._scalars_all(stmt)
         return [UserSchema.model_validate(r) for r in rows]

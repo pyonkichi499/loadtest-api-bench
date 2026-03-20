@@ -105,6 +105,22 @@ async def test_中間一致で検索できる(db_accessor: DBAccessor) -> None:
     assert len(users) == 2  # "Alice Smith" と "Charlie Alice Brown"
 
 
+async def test_パーセント記号を含む名前でもリテラルとして検索できる(
+    wildcard_db_accessor: DBAccessor,
+) -> None:
+    users = await wildcard_db_accessor.search_users("%")
+    assert len(users) == 1
+    assert users[0].name == "100% Juice"
+
+
+async def test_アンダースコアを含む名前でもリテラルとして検索できる(
+    wildcard_db_accessor: DBAccessor,
+) -> None:
+    users = await wildcard_db_accessor.search_users("_")
+    assert len(users) == 1
+    assert users[0].name == "user_name_test"
+
+
 # --- get_stats ---
 
 
