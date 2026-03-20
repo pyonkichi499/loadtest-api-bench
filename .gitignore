@@ -12,6 +12,7 @@ build/
 # Environment
 .env
 .env.*
+!.env.example
 
 # IDE
 .vscode/
@@ -21,8 +22,12 @@ build/
 
 # Testing
 .pytest_cache/
+.hypothesis/
 .coverage
 htmlcov/
+
+# Seed data
+seed.db
 
 # Claude Code
 .claude/
@@ -30,5 +35,5 @@ htmlcov/
 # Node.js (openapi-generator-cli)
 node_modules/
 
-# Generated (tracked separately)
-# output/
+# Generated (openapi-generator output, not used)
+output/

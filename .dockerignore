@@ -1,0 +1,49 @@
+# Version control
+.git/
+.gitignore
+
+# Virtual environment
+.venv/
+
+# Testing
+.pytest_cache/
+tests/
+
+# Python cache
+__pycache__/
+
+# Node.js (openapi-generator-cli)
+node_modules/
+
+# Generated code (not needed at runtime)
+output/
+
+# CI/CD
+.github/
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+docs/
+devlog/
+
+# Markdown (except README.md needed by pyproject.toml)
+*.md
+!README.md
+
+# Environment files
+.env*
+
+# Claude Code
+.claude/
+
+# Lock files
+*.lock
+
+# Scripts
+scripts/
+
+# Docker
+.dockerignore
