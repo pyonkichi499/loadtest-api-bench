@@ -15,8 +15,12 @@ class CloudLoggingFormatter(logging.Formatter):
         "CRITICAL": "CRITICAL",
     }
 
+    _STANDARD_ATTRS: frozenset[str] = frozenset(
+        logging.LogRecord("", 0, "", 0, None, None, None).__dict__.keys()
+    )
+
     def format(self, record: logging.LogRecord) -> str:
-        log_entry: dict[str, str] = {
+        log_entry: dict[str, object] = {
             "severity": self._LEVEL_TO_SEVERITY.get(record.levelname, record.levelname),
             "message": record.getMessage(),
             "timestamp": datetime.fromtimestamp(
@@ -25,6 +29,12 @@ class CloudLoggingFormatter(logging.Formatter):
         }
         if record.exc_info and record.exc_info[0] is not None:
             log_entry["exception"] = self.formatException(record.exc_info)
+
+        # extra フィールドを JSON に含める
+        for key, value in record.__dict__.items():
+            if key not in self._STANDARD_ATTRS:
+                log_entry[key] = value
+
         return json.dumps(log_entry, ensure_ascii=False)
 
 
